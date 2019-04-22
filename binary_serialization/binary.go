@@ -817,6 +817,94 @@ func (bh *BinaryHandler) WriteUint64Array(v []uint64) (err error) {
 	return
 }
 
+//读取float32数组
+func (bh *BinaryHandler) ReadFloat32Array() (ret []float32, err error) {
+	var size uint32
+
+	//读长度
+	size, err = bh.ReadArrayLen()
+	if err != nil {
+		return
+	}
+	//读内容
+	ret = make([]float32, size)
+	for i := uint32(0); i < size; i++ {
+		ret[i], err = bh.ReadFloat32()
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+//写入uint32数组
+func (bh *BinaryHandler) WriteFloat32Array(v []float32) (err error) {
+	//写长度
+	var size int
+	if v == nil {
+		size = 0
+	} else {
+		size = len(v)
+	}
+	err = bh.WriteArrayLen(size)
+	if err != nil {
+		return
+	}
+
+	//写内容
+	for i := 0; i < size; i++ {
+		err = bh.WriteFloat32(v[i])
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+//读取uint64数组
+func (bh *BinaryHandler) ReadFloat64Array() (ret []float64, err error) {
+	var size uint32
+
+	//读长度
+	size, err = bh.ReadArrayLen()
+	if err != nil {
+		return
+	}
+	//读内容
+	ret = make([]float64, size)
+	for i := uint32(0); i < size; i++ {
+		ret[i], err = bh.ReadFloat64()
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+//写入uint64数组
+func (bh *BinaryHandler) WriteFloat64Array(v []float64) (err error) {
+	//写长度
+	var size int
+	if v == nil {
+		size = 0
+	} else {
+		size = len(v)
+	}
+	err = bh.WriteArrayLen(size)
+	if err != nil {
+		return
+	}
+
+	//写内容
+	for i := 0; i < size; i++ {
+		err = bh.WriteFloat64(v[i])
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
 //读取string数组
 func (bh *BinaryHandler) ReadStringArray() (ret []string, err error) {
 	var size uint32

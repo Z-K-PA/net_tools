@@ -15,6 +15,9 @@ var (
 
 	//数组越界
 	ErrArrayOverflow = errors.New("binary handler array overflow")
+
+	//反序号化的缓冲区为空
+	ErrEmptyBuffer = errors.New("binary handler empty buffer")
 )
 
 //序列化结构体定义
@@ -23,13 +26,31 @@ type BinaryHandler struct {
 	data []byte //二进制流的内容切片
 }
 
-//新建对象
-func NewBinaryHandler(data []byte) *BinaryHandler {
+//新建读取对象
+func NewReadBinaryHandler(data []byte) (*BinaryHandler, error) {
+	if data == nil {
+		return nil, ErrEmptyBuffer
+	} else {
+		if len(data) == 0 {
+			return nil, ErrEmptyBuffer
+		} else {
+			return &BinaryHandler{
+				data: data,
+			}, nil
+		}
+	}
+}
+
+//新建写入对象
+func NewWriteBinaryHandler(data []byte) *BinaryHandler {
 	if data == nil {
 		return &BinaryHandler{
 			data: make([]byte, 0, BUF_SIZE_INIT),
 		}
 	} else {
+		if len(data) > 0 {
+			data = data[:0]
+		}
 		return &BinaryHandler{
 			data: data,
 		}

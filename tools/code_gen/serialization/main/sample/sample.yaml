@@ -1,0 +1,27 @@
+package: sample
+name: SampleHandler
+comment: 序列化例子
+objects:
+
+- name: Sample1
+  comment: 对象定义1
+  fields:
+  - name: Field1
+    typeDefine: byteArray
+    comment: 字节流属性
+  - name: Field2
+    typeDefine: string
+    comment: 字符串属性
+  - name: Field3
+    typeDefine: float64
+    comment: 浮点数属性
+
+- name: Sample2
+  comment: 对象定义2
+  fields:
+  - name: Id
+    typeDefine: int32
+    comment: id定义
+  - name: Sample1List
+    typeDefine: Sample1Array
+    comment: sample1 list

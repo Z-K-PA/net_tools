@@ -1,0 +1,16 @@
+// Code generation
+// !!! Do not edit it.
+// !!! Use code gen tool to generate.
+
+package {{.Package}}
+
+{{- range $obj := .Objects}}
+//{{$obj.Comment}}
+type {{$obj.Name}} struct {
+{{- range $field := $obj.Fields}}
+    //{{$field.Comment}}
+    {{$field.Name}} {{$field.TypeDefine | addArrayPrefix}}
+{{- end}}
+}
+
+{{- end}}

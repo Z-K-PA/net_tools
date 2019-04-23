@@ -2,9 +2,9 @@ package main
 
 import (
 	"errors"
-	"github.com/Z-K-PA/net_tools/file_handle"
-	"github.com/Z-K-PA/net_tools/tools/code_gen/serialization"
 	"github.com/go-yaml/yaml"
+	"github.com/pineal-niwan/busybox/file_handle"
+	"github.com/pineal-niwan/busybox/tools/code_gen/serialization"
 	"github.com/urfave/cli"
 	"go.uber.org/zap"
 	"log"

@@ -5,7 +5,7 @@
 package sample
 
 import (
-    "github.com/Z-K-PA/net_tools/binary_serialization"
+    "github.com/pineal-niwan/busybox/binary_serialization"
 )
 
 //序列化例子

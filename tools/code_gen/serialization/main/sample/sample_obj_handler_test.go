@@ -32,9 +32,9 @@ func TestNewSampleHandler(t *testing.T) {
 	if err != nil {
 		t.Errorf("new reader error:%+v", err)
 		return
-	}else{
+	} else {
 		newSample, err := reader.ReadSample2()
-		if err != nil{
+		if err != nil {
 			t.Errorf("unmarshal error:%+v", err)
 		}
 		if newSample.Id != 1002010 {

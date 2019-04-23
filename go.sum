@@ -1,3 +1,5 @@
+github.com/Z-K-PA/net_tools v0.0.0-20190423080725-4b09eb15d488 h1:xP3zh7efxC8GOo+K89XoxYySpqgLyJCIb0MNI13ffKk=
+github.com/Z-K-PA/net_tools v0.0.0-20190423080725-4b09eb15d488/go.mod h1:wKhHmmN7gUxHoRHD8bqZUJ4tm5CJFTWMoVsPk2xl8fg=
 github.com/go-yaml/yaml v2.1.0+incompatible h1:RYi2hDdss1u4YE7GwixGzWwVo47T8UQwnTLB6vQiq+o=
 github.com/go-yaml/yaml v2.1.0+incompatible/go.mod h1:w2MrLa16VYP0jy6N7M5kHaCkaLENm+P+Tv+MfurjSw0=
 github.com/spf13/cobra v0.0.3/go.mod h1:1l0Ry5zgKvJasoi3XT1TypsSe7PqH0Sj9dhYf7v3XqQ=

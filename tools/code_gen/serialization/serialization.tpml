@@ -5,17 +5,17 @@
 package {{.Package}}
 
 import (
-    "github.com/pineal-niwan/busybox/binary_serialization"
+    "github.com/pineal-niwan/busybox/binary"
 )
 
 //{{.Comment}}
 type {{.Name}} struct {
-    *binary_serialization.BinaryHandler
+    *binary.BinaryHandler
 }
 
 //反序列化handler,读取字节流到对象中
 func NewRead{{.Name}}(data []byte) (*{{.Name}}, error) {
-    binHandler, err := binary_serialization.NewReadBinaryHandler(data)
+    binHandler, err := binary.NewReadBinaryHandler(data)
     if err != nil {
         return nil, err
     }else{
@@ -28,7 +28,7 @@ func NewRead{{.Name}}(data []byte) (*{{.Name}}, error) {
 //序列化handler,将对象转化成字节流
 func NewWrite{{.Name}}(data []byte) *{{.Name}} {
     return &{{.Name}}{
-        BinaryHandler: binary_serialization.NewWriteBinaryHandler(data),
+        BinaryHandler: binary.NewWriteBinaryHandler(data),
     }
 }
 

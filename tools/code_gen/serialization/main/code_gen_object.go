@@ -3,8 +3,8 @@ package main
 import (
 	"errors"
 	"github.com/go-yaml/yaml"
-	"github.com/pineal-niwan/busybox/file_handle"
 	"github.com/pineal-niwan/busybox/tools/code_gen/serialization"
+	"github.com/pineal-niwan/busybox/util"
 	"github.com/urfave/cli"
 	"go.uber.org/zap"
 	"log"
@@ -69,12 +69,12 @@ func generatewithLogger(c *cli.Context, logger *zap.Logger) error {
 		return errors.New("not specific output file path")
 	}
 
-	templateBuf, err := file_handle.ReadFile2Buffer(templateFileName)
+	templateBuf, err := util.ReadFile2Buffer(templateFileName)
 	if err != nil {
 		return err
 	}
 
-	err = file_handle.UnMarshalFile2Object(yaml.Unmarshal, inFileName, &packageDef)
+	err = util.UnMarshalFile2Object(yaml.Unmarshal, inFileName, &packageDef)
 	if err != nil {
 		return err
 	}

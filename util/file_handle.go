@@ -1,4 +1,4 @@
-package file_handle
+package util
 
 import (
 	"io/ioutil"

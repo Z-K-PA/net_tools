@@ -1,23 +1,10 @@
-package binary_serialization
+package binary
 
 import (
-	"errors"
 	"fmt"
+	"github.com/pineal-niwan/busybox/binary_protocol/binary_error"
+	"github.com/pineal-niwan/busybox/buffer"
 	"math"
-)
-
-var (
-	//数据越界
-	ErrOverflow = errors.New("binary handler data overflow")
-
-	//字符串长度越界
-	ErrStringOverflow = errors.New("binary handler string overflow")
-
-	//数组越界
-	ErrArrayOverflow = errors.New("binary handler array overflow")
-
-	//反序号化的缓冲区为空
-	ErrEmptyBuffer = errors.New("binary handler empty buffer")
 )
 
 //序列化结构体定义
@@ -29,10 +16,10 @@ type BinaryHandler struct {
 //新建读取对象
 func NewReadBinaryHandler(data []byte) (*BinaryHandler, error) {
 	if data == nil {
-		return nil, ErrEmptyBuffer
+		return nil, binary_error.ErrEmptyBuffer
 	} else {
 		if len(data) == 0 {
-			return nil, ErrEmptyBuffer
+			return nil, binary_error.ErrEmptyBuffer
 		} else {
 			return &BinaryHandler{
 				data: data,
@@ -65,10 +52,10 @@ func (bh *BinaryHandler) Data() []byte {
 //检查当前位置加上一个偏移后是否越界
 func (bh *BinaryHandler) checkPos(offset uint32) error {
 	if bh.pos > DATA_MAX_LEN {
-		return ErrOverflow
+		return binary_error.ErrOverflow
 	}
 	if bh.pos+int(offset) > len(bh.data) {
-		return errors.New(fmt.Sprintf("binary handler overflow, pos: %d offset: %d", bh.pos, offset))
+		return fmt.Errorf("binary handler overflow, pos: %d offset: %d", bh.pos, offset)
 	}
 	return nil
 }
@@ -76,7 +63,7 @@ func (bh *BinaryHandler) checkPos(offset uint32) error {
 //在写入数据后检查是否越界
 func (bh *BinaryHandler) checkOverflow() error {
 	if len(bh.data) > DATA_MAX_LEN {
-		return ErrOverflow
+		return binary_error.ErrOverflow
 	}
 	return nil
 }
@@ -84,9 +71,9 @@ func (bh *BinaryHandler) checkOverflow() error {
 //写入bytes
 func (bh *BinaryHandler) appendData(data []byte) error {
 	if len(bh.data)+len(data) > DATA_MAX_LEN {
-		return ErrOverflow
+		return binary_error.ErrOverflow
 	}
-	bh.data = append(bh.data, data...)
+	bh.data = buffer.AppendBytes(bh.data, data)
 	return nil
 }
 
@@ -382,7 +369,7 @@ func (bh *BinaryHandler) ReadString() (ret string, err error) {
 	}
 	//检查字符串是否越界
 	if size > STR_MAX_LEN {
-		err = ErrStringOverflow
+		err = binary_error.ErrStringOverflow
 		return
 	}
 
@@ -403,7 +390,7 @@ func (bh *BinaryHandler) WriteString(s string) (err error) {
 	size := len(b)
 
 	if size > STR_MAX_LEN {
-		err = ErrStringOverflow
+		err = binary_error.ErrStringOverflow
 		return
 	}
 
@@ -422,7 +409,7 @@ func (bh *BinaryHandler) ReadArrayLen() (size uint32, err error) {
 		return
 	}
 	if size > ARRAY_MAX_LEN {
-		err = ErrArrayOverflow
+		err = binary_error.ErrArrayOverflow
 	}
 	return
 }
@@ -430,7 +417,7 @@ func (bh *BinaryHandler) ReadArrayLen() (size uint32, err error) {
 //写入一个数组长度，并判断其是否越界
 func (bh *BinaryHandler) WriteArrayLen(size int) (err error) {
 	if size > ARRAY_MAX_LEN {
-		err = ErrArrayOverflow
+		err = binary_error.ErrArrayOverflow
 		return
 	}
 	return bh.WriteUint32(uint32(size))

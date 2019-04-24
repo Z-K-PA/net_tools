@@ -1,4 +1,4 @@
-package binary_serialization
+package binary
 
 const (
 	DATA_MAX_LEN = 32 * 1024 * 1024 //序列化最大长度为32M

@@ -1,0 +1,27 @@
+package main
+
+import (
+	"github.com/urfave/cli"
+)
+
+var (
+	app *cli.App
+)
+
+func init() {
+	app := cli.App{
+		Name:    `{{.AppName}}`,
+		Usage:   `{{.Usage}}`,
+		Version: `{{.Version}}`,
+		Flags: []cli.Flag{
+			{{- range $flag := .Flags}}
+			&cli.{{$flag.TypeDefine}}{
+			    Name: `{{$flag.Name}}`,
+			    Usage: `{{$flag.Usage}}`,
+			    Value: {{$flag.Value}},
+			}
+			{{- end}}
+		},
+		Action: appRun,
+	}
+}

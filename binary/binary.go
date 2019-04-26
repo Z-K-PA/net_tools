@@ -2,46 +2,74 @@ package binary
 
 import (
 	"fmt"
-	"github.com/pineal-niwan/busybox/binary_protocol/binary_error"
+	"github.com/pineal-niwan/busybox/binary/binary_error"
 	"github.com/pineal-niwan/busybox/buffer"
 	"math"
 )
 
+//序列化参数
+type Option struct {
+	//序列化最大长度
+	DataMaxLen int
+	//支持的字符串长度
+	StringMaxLen int
+	//支持的数组最大长度
+	ArrayMaxLen int
+	//扩大容量时额外多分配的字节数
+	ExtendExtraSize int
+}
+
+func (option *Option) Validate() bool {
+	if option.DataMaxLen < MinBufferSize ||
+		option.StringMaxLen < MinBufferSize ||
+		option.ArrayMaxLen < MinBufferSize ||
+		option.ExtendExtraSize < MinBufferSize {
+		return false
+	}
+	return true
+}
+
 //序列化结构体定义
 type BinaryHandler struct {
-	pos  int    //当前buffer的指针
-	data []byte //二进制流的内容切片
+	pos    int     //当前buffer的指针
+	data   []byte  //二进制流的内容切片
+	option *Option //序列化选项
 }
 
 //新建读取对象
-func NewReadBinaryHandler(data []byte) (*BinaryHandler, error) {
-	if data == nil {
-		return nil, binary_error.ErrEmptyBuffer
-	} else {
-		if len(data) == 0 {
-			return nil, binary_error.ErrEmptyBuffer
-		} else {
-			return &BinaryHandler{
-				data: data,
-			}, nil
-		}
+func NewReadBinaryHandler(data []byte, option *Option) (*BinaryHandler, error) {
+	if option == nil {
+		return nil, binary_error.ErrInitHandler
 	}
+
+	if !option.Validate() {
+		return nil, binary_error.ErrInitHandler
+	}
+
+	if len(data) == 0 {
+		return nil, binary_error.ErrEmptyBuffer
+	}
+
+	return &BinaryHandler{
+		data:   data,
+		option: option,
+	}, nil
 }
 
 //新建写入对象
-func NewWriteBinaryHandler(data []byte) *BinaryHandler {
-	if data == nil {
-		return &BinaryHandler{
-			data: make([]byte, 0, BUF_SIZE_INIT),
-		}
-	} else {
-		if len(data) > 0 {
-			data = data[:0]
-		}
-		return &BinaryHandler{
-			data: data,
-		}
+func NewWriteBinaryHandler(data []byte, option *Option) (*BinaryHandler, error) {
+	if option == nil {
+		return nil, binary_error.ErrInitHandler
 	}
+
+	if !option.Validate() {
+		return nil, binary_error.ErrInitHandler
+	}
+
+	return &BinaryHandler{
+		data:   data,
+		option: option,
+	}, nil
 }
 
 //获取buffer
@@ -49,31 +77,61 @@ func (bh *BinaryHandler) Data() []byte {
 	return bh.data
 }
 
+//获取len
+func (bh *BinaryHandler) Len() int {
+	return bh.pos
+}
+
 //检查当前位置加上一个偏移后是否越界
 func (bh *BinaryHandler) checkPos(offset uint32) error {
-	if bh.pos > DATA_MAX_LEN {
+	dataLen := bh.pos + int(offset)
+	if dataLen > bh.option.DataMaxLen {
 		return binary_error.ErrOverflow
 	}
-	if bh.pos+int(offset) > len(bh.data) {
+	if dataLen > len(bh.data) {
 		return fmt.Errorf("binary handler overflow, pos: %d offset: %d", bh.pos, offset)
 	}
 	return nil
 }
 
-//在写入数据后检查是否越界
-func (bh *BinaryHandler) checkOverflow() error {
-	if len(bh.data) > DATA_MAX_LEN {
+//检查是否需要扩大缓冲区
+func (bh *BinaryHandler) extendBufferIfNeed(offset uint32) error {
+	dataLen := bh.pos + int(offset)
+	if dataLen > bh.option.DataMaxLen {
 		return binary_error.ErrOverflow
 	}
+	bh.data = buffer.BytesExtends(bh.data, dataLen, bh.option.ExtendExtraSize)
 	return nil
 }
 
-//写入bytes
-func (bh *BinaryHandler) appendData(data []byte) error {
-	if len(bh.data)+len(data) > DATA_MAX_LEN {
+//游动pos
+func (bh *BinaryHandler) MovePos(offset uint32) error {
+	err := bh.extendBufferIfNeed(offset)
+	if err != nil {
+		return err
+	}
+	bh.pos += int(offset)
+	return nil
+}
+
+//重置pos-并返回当前pos
+func (bh *BinaryHandler) ResetPos(newPos int) int {
+	oldPos := bh.pos
+	bh.pos = newPos
+	return oldPos
+}
+
+//随机写入
+func (bh *BinaryHandler) WriteBytesStartAt(pos int, byteItem []byte) error {
+	offset := len(byteItem)
+	dataLen := pos + offset
+	if dataLen > bh.option.DataMaxLen {
 		return binary_error.ErrOverflow
 	}
-	bh.data = buffer.AppendBytes(bh.data, data)
+	if dataLen > len(bh.data) {
+		return fmt.Errorf("binary handler overflow, pos: %d offset: %d", pos, offset)
+	}
+	copy(bh.data[pos:], byteItem)
 	return nil
 }
 
@@ -93,12 +151,17 @@ func (bh *BinaryHandler) ReadBool() (ret bool, err error) {
 //写入bool型
 // - 用一个byte表示bool
 func (bh *BinaryHandler) WriteBool(b bool) error {
-	if b {
-		bh.data = append(bh.data, byte(1))
-	} else {
-		bh.data = append(bh.data, byte(0))
+	err := bh.extendBufferIfNeed(1)
+	if err != nil {
+		return err
 	}
-	return bh.checkOverflow()
+	if b {
+		bh.data[bh.pos] = byte(1)
+	} else {
+		bh.data[bh.pos] = byte(0)
+	}
+	bh.pos++
+	return nil
 }
 
 //读取byte型
@@ -114,8 +177,13 @@ func (bh *BinaryHandler) ReadByte() (ret byte, err error) {
 
 //写入byte型
 func (bh *BinaryHandler) WriteByte(bt byte) error {
-	bh.data = append(bh.data, bt)
-	return bh.checkOverflow()
+	err := bh.extendBufferIfNeed(1)
+	if err != nil {
+		return err
+	}
+	bh.data[bh.pos] = bt
+	bh.pos++
+	return nil
 }
 
 //读取int8型
@@ -131,8 +199,13 @@ func (bh *BinaryHandler) ReadInt8() (ret int8, err error) {
 
 //写入int8型
 func (bh *BinaryHandler) WriteInt8(i8 int8) error {
-	bh.data = append(bh.data, byte(i8))
-	return bh.checkOverflow()
+	err := bh.extendBufferIfNeed(1)
+	if err != nil {
+		return err
+	}
+	bh.data[bh.pos] = byte(i8)
+	bh.pos++
+	return nil
 }
 
 //读取uint8型
@@ -148,8 +221,14 @@ func (bh *BinaryHandler) ReadUint8() (ret uint8, err error) {
 
 //写入uint8型
 func (bh *BinaryHandler) WriteUint8(i8 uint8) error {
+	err := bh.extendBufferIfNeed(1)
+	if err != nil {
+		return err
+	}
+	bh.data[bh.pos] = i8
 	bh.data = append(bh.data, i8)
-	return bh.checkOverflow()
+	bh.pos++
+	return nil
 }
 
 //读取uint16型
@@ -168,11 +247,14 @@ func (bh *BinaryHandler) ReadUint16() (ret uint16, err error) {
 
 //写入uint16型
 func (bh *BinaryHandler) WriteUint16(v uint16) error {
-	bh.data = append(bh.data,
-		byte(v),
-		byte(v>>8))
-
-	return bh.checkOverflow()
+	err := bh.extendBufferIfNeed(2)
+	if err != nil {
+		return err
+	}
+	bh.data[bh.pos] = byte(v)
+	bh.data[bh.pos+1] = byte(v >> 8)
+	bh.pos += 2
+	return nil
 }
 
 //读取int16型
@@ -191,11 +273,14 @@ func (bh *BinaryHandler) ReadInt16() (ret int16, err error) {
 
 //写入int16型
 func (bh *BinaryHandler) WriteInt16(v int16) error {
-	bh.data = append(bh.data,
-		byte(v),
-		byte(v>>8))
-
-	return bh.checkOverflow()
+	err := bh.extendBufferIfNeed(2)
+	if err != nil {
+		return err
+	}
+	bh.data[bh.pos] = byte(v)
+	bh.data[bh.pos+1] = byte(v >> 8)
+	bh.pos += 2
+	return nil
 }
 
 //读取uint32型
@@ -216,13 +301,16 @@ func (bh *BinaryHandler) ReadUint32() (ret uint32, err error) {
 
 //写入uint32型
 func (bh *BinaryHandler) WriteUint32(v uint32) error {
-	bh.data = append(bh.data,
-		byte(v),
-		byte(v>>8),
-		byte(v>>16),
-		byte(v>>24))
-
-	return bh.checkOverflow()
+	err := bh.extendBufferIfNeed(4)
+	if err != nil {
+		return err
+	}
+	bh.data[bh.pos] = byte(v)
+	bh.data[bh.pos+1] = byte(v >> 8)
+	bh.data[bh.pos+2] = byte(v >> 16)
+	bh.data[bh.pos+3] = byte(v >> 24)
+	bh.pos += 4
+	return nil
 }
 
 //读取int32型
@@ -243,13 +331,16 @@ func (bh *BinaryHandler) ReadInt32() (ret int32, err error) {
 
 //写入int32型
 func (bh *BinaryHandler) WriteInt32(v int32) error {
-	bh.data = append(bh.data,
-		byte(v),
-		byte(v>>8),
-		byte(v>>16),
-		byte(v>>24))
-
-	return bh.checkOverflow()
+	err := bh.extendBufferIfNeed(4)
+	if err != nil {
+		return err
+	}
+	bh.data[bh.pos] = byte(v)
+	bh.data[bh.pos+1] = byte(v >> 8)
+	bh.data[bh.pos+2] = byte(v >> 16)
+	bh.data[bh.pos+3] = byte(v >> 24)
+	bh.pos += 4
+	return nil
 }
 
 //读取uint64型
@@ -274,17 +365,20 @@ func (bh *BinaryHandler) ReadUint64() (ret uint64, err error) {
 
 //写入uint64型
 func (bh *BinaryHandler) WriteUint64(v uint64) error {
-	bh.data = append(bh.data,
-		byte(v),
-		byte(v>>8),
-		byte(v>>16),
-		byte(v>>24),
-		byte(v>>32),
-		byte(v>>40),
-		byte(v>>48),
-		byte(v>>56))
-
-	return bh.checkOverflow()
+	err := bh.extendBufferIfNeed(8)
+	if err != nil {
+		return err
+	}
+	bh.data[bh.pos] = byte(v)
+	bh.data[bh.pos+1] = byte(v >> 8)
+	bh.data[bh.pos+2] = byte(v >> 16)
+	bh.data[bh.pos+3] = byte(v >> 24)
+	bh.data[bh.pos+4] = byte(v >> 32)
+	bh.data[bh.pos+5] = byte(v >> 40)
+	bh.data[bh.pos+6] = byte(v >> 48)
+	bh.data[bh.pos+7] = byte(v >> 56)
+	bh.pos += 8
+	return nil
 }
 
 //读取int64型
@@ -309,17 +403,20 @@ func (bh *BinaryHandler) ReadInt64() (ret int64, err error) {
 
 //写入int64型
 func (bh *BinaryHandler) WriteInt64(v int64) error {
-	bh.data = append(bh.data,
-		byte(v),
-		byte(v>>8),
-		byte(v>>16),
-		byte(v>>24),
-		byte(v>>32),
-		byte(v>>40),
-		byte(v>>48),
-		byte(v>>56))
-
-	return bh.checkOverflow()
+	err := bh.extendBufferIfNeed(8)
+	if err != nil {
+		return err
+	}
+	bh.data[bh.pos] = byte(v)
+	bh.data[bh.pos+1] = byte(v >> 8)
+	bh.data[bh.pos+2] = byte(v >> 16)
+	bh.data[bh.pos+3] = byte(v >> 24)
+	bh.data[bh.pos+4] = byte(v >> 32)
+	bh.data[bh.pos+5] = byte(v >> 40)
+	bh.data[bh.pos+6] = byte(v >> 48)
+	bh.data[bh.pos+7] = byte(v >> 56)
+	bh.pos += 8
+	return nil
 }
 
 //读取float32型
@@ -368,7 +465,7 @@ func (bh *BinaryHandler) ReadString() (ret string, err error) {
 		return
 	}
 	//检查字符串是否越界
-	if size > STR_MAX_LEN {
+	if int(size) > bh.option.StringMaxLen {
 		err = binary_error.ErrStringOverflow
 		return
 	}
@@ -389,7 +486,7 @@ func (bh *BinaryHandler) WriteString(s string) (err error) {
 	b := []byte(s)
 	size := len(b)
 
-	if size > STR_MAX_LEN {
+	if size > bh.option.StringMaxLen {
 		err = binary_error.ErrStringOverflow
 		return
 	}
@@ -398,7 +495,13 @@ func (bh *BinaryHandler) WriteString(s string) (err error) {
 	if err != nil {
 		return
 	}
-	return bh.appendData(b)
+	err = bh.extendBufferIfNeed(uint32(size))
+	if err != nil {
+		return
+	}
+	copy(bh.data[bh.pos:], b)
+	bh.pos += size
+	return
 }
 
 //读取一个数组长度，并判断其是否越界
@@ -408,7 +511,7 @@ func (bh *BinaryHandler) ReadArrayLen() (size uint32, err error) {
 	if err != nil {
 		return
 	}
-	if size > ARRAY_MAX_LEN {
+	if int(size) > bh.option.ArrayMaxLen {
 		err = binary_error.ErrArrayOverflow
 	}
 	return
@@ -416,7 +519,7 @@ func (bh *BinaryHandler) ReadArrayLen() (size uint32, err error) {
 
 //写入一个数组长度，并判断其是否越界
 func (bh *BinaryHandler) WriteArrayLen(size int) (err error) {
-	if size > ARRAY_MAX_LEN {
+	if size > bh.option.ArrayMaxLen {
 		err = binary_error.ErrArrayOverflow
 		return
 	}
@@ -457,9 +560,12 @@ func (bh *BinaryHandler) WriteByteArray(v []byte) (err error) {
 	if err != nil {
 		return
 	}
-
-	//写内容
-	err = bh.appendData(v)
+	err = bh.extendBufferIfNeed(uint32(size))
+	if err != nil {
+		return
+	}
+	copy(bh.data[bh.pos:], v)
+	bh.pos += size
 	return
 }
 

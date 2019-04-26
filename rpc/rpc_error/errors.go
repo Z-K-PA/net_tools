@@ -3,7 +3,9 @@ package rpc_error
 import "errors"
 
 var (
-	ErrInvalidRPCOption = errors.New("invalid rpc option")
+	ErrInvalidOption = errors.New("invalid option")
+
+	ErrEmptyConnection = errors.New("invalid empty connection")
 
 	ErrTooLongInputData = errors.New("too long input data")
 
@@ -12,4 +14,10 @@ var (
 	ErrEmptyMsg = errors.New("empty rpc content")
 
 	ErrEmptyLogger = errors.New("empty logger")
+
+	ErrInvalidPool = errors.New("pool invalid settings")
+
+	ErrPoolInitErr = errors.New("pool init error")
+
+	ErrPoolClosed = errors.New("pool is closed")
 )

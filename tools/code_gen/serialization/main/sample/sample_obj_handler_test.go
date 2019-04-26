@@ -2,7 +2,21 @@ package sample
 
 import (
 	"bytes"
+	"github.com/pineal-niwan/busybox/binary"
 	"testing"
+)
+
+var (
+	testOption = &binary.Option{
+		//序列化最大长度
+		DataMaxLen: 1024 * 1024,
+		//支持的字符串长度
+		StringMaxLen: 256,
+		//支持的数组最大长度
+		ArrayMaxLen: 256,
+		//扩大容量时额外多分配的字节数
+		ExtendExtraSize: 256,
+	}
 )
 
 func TestNewSampleHandler(t *testing.T) {
@@ -18,8 +32,12 @@ func TestNewSampleHandler(t *testing.T) {
 	sample.Sample1List[0].Field2 = "abc"
 	sample.Sample1List[0].Field3 = float64(flag)
 
-	writer := NewWriteSampleHandler(buf)
-	err := writer.WriteSample2(sample)
+	writer, err := NewWriteSampleHandlerWithOption(buf, testOption)
+	if err != nil {
+		t.Errorf("init error:%+v", err)
+		return
+	}
+	err = writer.WriteSample2(sample)
 	if err != nil {
 		t.Errorf("marshal error:%+v", err)
 		return
@@ -28,7 +46,7 @@ func TestNewSampleHandler(t *testing.T) {
 	newData := writer.Data()
 	t.Logf("new buf len:%+v cap:%+v", len(newData), cap(newData))
 
-	reader, err := NewReadSampleHandler(newData)
+	reader, err := NewReadSampleHandlerWithOption(newData, testOption)
 	if err != nil {
 		t.Errorf("new reader error:%+v", err)
 		return

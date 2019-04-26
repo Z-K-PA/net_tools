@@ -3,6 +3,9 @@ package binary_error
 import "errors"
 
 var (
+	//序列化handler初始失败
+	ErrInitHandler = errors.New("binary handler init error")
+
 	//数据越界
 	ErrOverflow = errors.New("binary handler data overflow")
 

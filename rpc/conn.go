@@ -57,100 +57,117 @@ func (option *Option) Validate() error {
 		option.RPCMaxInputSize == 0 ||
 		option.RPCMaxOutputSize == 0 ||
 		option.ParseDataSize == nil {
-		return rpc_error.ErrInvalidRPCOption
+		return rpc_error.ErrInvalidOption
 	}
 	if option.HeadSize > option.BufferSize {
 		//连接收消息头的buffer大小都不够
-		return rpc_error.ErrInvalidRPCOption
+		return rpc_error.ErrInvalidOption
 	}
-	return rpc_error.ErrInvalidRPCOption
+
+	return nil
 }
 
 type Conn struct {
-	conn net.Conn
+	//连接
+	net.Conn
 	//option
 	option Option
 	//缓存
 	buffer []byte
 	//关闭
 	closed bool
-	sync.Mutex
+	sync.RWMutex
 }
 
 //初始化
-func (cli *Conn) Init(conn net.Conn, option Option) error {
+func (c *Conn) Init(conn net.Conn, option Option) error {
+	if conn == nil {
+		return rpc_error.ErrEmptyConnection
+	}
 	err := option.Validate()
 	if err != nil {
+		closeErr := conn.Close()
+		if closeErr != nil {
+			return closeErr
+		}
 		return err
 	}
-	cli.conn = conn
-	cli.option = option
-	cli.buffer = make([]byte, cli.option.BufferSize)
+	c.Conn = conn
+	c.option = option
+	c.buffer = make([]byte, c.option.BufferSize)
 	return nil
 }
 
 //关闭
-func (cli *Conn) Close() (err error) {
-	cli.Lock()
-	if cli.closed {
-		cli.Unlock()
+func (c *Conn) Close() (err error) {
+	c.Lock()
+	if c.closed {
+		c.Unlock()
 		return
 	} else {
-		cli.closed = true
-		err = cli.conn.Close()
-		cli.Unlock()
+		c.closed = true
+		err = c.Conn.Close()
+		c.Unlock()
 		return
 	}
 }
 
+//是否关闭
+func (c *Conn) IsClosed() bool {
+	c.RLock()
+	closed := c.closed
+	c.RUnlock()
+	return closed
+}
+
 //发送和接收消息 -- 给客户端使用
 //发送的消息缓存在buffer中，在发送完成后，又用缓存的buffer去接收
-func (cli *Conn) SendAndRecv(
+func (c *Conn) SendAndRecv(
 	sendHandler SendHandler,
-	timeout time.Duration) (readSize int, err error) {
+	deadline time.Time) (readSize int, err error) {
 
 	//设置发送缓存区
 	var sendSize int
-	cli.buffer, sendSize, err = sendHandler(cli.buffer, cli.option.RPCMaxInputSize)
+	c.buffer, sendSize, err = sendHandler(c.buffer, c.option.RPCMaxInputSize)
 	if err != nil {
 		return
 	}
 
-	if sendSize > cli.option.RPCMaxInputSize {
+	if sendSize > c.option.RPCMaxInputSize {
 		//发送字节流太长
 		err = rpc_error.ErrTooLongInputData
 		return
 	}
 
 	//如果有超时,设置超时
-	if timeout > 0 {
-		err = cli.conn.SetDeadline(time.Now().Add(timeout))
+	if !deadline.IsZero() {
+		err = c.Conn.SetDeadline(deadline)
 		if err != nil {
 			return
 		}
 	}
 
 	//先发送数据
-	err = util.NetSendBytes(cli.conn, cli.buffer[:sendSize])
+	err = util.NetSendBytes(c.Conn, c.buffer[:sendSize])
 	if err != nil {
 		return
 	}
 
 	//读头部
-	err = util.NetReadBytes(cli.conn, cli.buffer[:cli.option.HeadSize])
+	err = util.NetReadBytes(c.Conn, c.buffer[:c.option.HeadSize])
 	if err != nil {
 		return
 	}
-	readSize += cli.option.HeadSize
+	readSize += c.option.HeadSize
 
 	//解析头部算出消息内容长度
 	var dataSize int
-	dataSize, err = cli.option.ParseDataSize(cli.buffer[:cli.option.HeadSize])
+	dataSize, err = c.option.ParseDataSize(c.buffer[:c.option.HeadSize])
 	if err != nil {
 		return
 	}
 
-	if dataSize > cli.option.RPCMaxOutputSize {
+	if dataSize > c.option.RPCMaxOutputSize {
 		//接收到的消息体长度太长
 		err = rpc_error.ErrTooLongOutputData
 		return
@@ -161,10 +178,10 @@ func (cli *Conn) SendAndRecv(
 		return
 	}
 	//扩容buffer
-	buffer.BytesExtends(cli.buffer, cli.option.HeadSize+dataSize)
+	buffer.BytesExtends(c.buffer, c.option.HeadSize+dataSize, 0)
 
 	//读内容
-	err = util.NetReadBytes(cli.conn, cli.buffer[cli.option.HeadSize:cli.option.HeadSize+dataSize])
+	err = util.NetReadBytes(c.Conn, c.buffer[c.option.HeadSize:c.option.HeadSize+dataSize])
 	if err != nil {
 		return
 	}
@@ -176,24 +193,24 @@ func (cli *Conn) SendAndRecv(
 //接收和发送消息 -- 给服务端端使用
 //接收的消息缓存在buffer中，在接收完成后，又用缓存的buffer去发送
 //此连接复用,不需要设置超时
-func (cli *Conn) RecvAndSend(recvHandler RecvHandler) (err error) {
+func (c *Conn) RecvAndSend(recvHandler RecvHandler) (err error) {
 
 	var readSize int
 	//读头部
-	err = util.NetReadBytes(cli.conn, cli.buffer[:cli.option.HeadSize])
+	err = util.NetReadBytes(c.Conn, c.buffer[:c.option.HeadSize])
 	if err != nil {
 		return
 	}
-	readSize += cli.option.HeadSize
+	readSize += c.option.HeadSize
 
 	//解析头部算出消息内容长度
 	var dataSize int
-	dataSize, err = cli.option.ParseDataSize(cli.buffer[:cli.option.HeadSize])
+	dataSize, err = c.option.ParseDataSize(c.buffer[:c.option.HeadSize])
 	if err != nil {
 		return
 	}
 
-	if dataSize > cli.option.RPCMaxInputSize {
+	if dataSize > c.option.RPCMaxInputSize {
 		//接收到的消息体长度太长
 		err = rpc_error.ErrTooLongInputData
 		return
@@ -204,10 +221,10 @@ func (cli *Conn) RecvAndSend(recvHandler RecvHandler) (err error) {
 		return
 	}
 	//扩容buffer
-	buffer.BytesExtends(cli.buffer, cli.option.HeadSize+dataSize)
+	buffer.BytesExtends(c.buffer, c.option.HeadSize+dataSize, 0)
 
 	//读内容
-	err = util.NetReadBytes(cli.conn, cli.buffer[cli.option.HeadSize:cli.option.HeadSize+dataSize])
+	err = util.NetReadBytes(c.Conn, c.buffer[c.option.HeadSize:c.option.HeadSize+dataSize])
 	if err != nil {
 		return
 	}
@@ -215,19 +232,19 @@ func (cli *Conn) RecvAndSend(recvHandler RecvHandler) (err error) {
 
 	//设置发送缓存区
 	var sendSize int
-	cli.buffer, sendSize, err = recvHandler(cli.buffer, readSize, cli.option.RPCMaxOutputSize)
+	c.buffer, sendSize, err = recvHandler(c.buffer, readSize, c.option.RPCMaxOutputSize)
 	if err != nil {
 		return
 	}
 
-	if sendSize > cli.option.RPCMaxOutputSize {
+	if sendSize > c.option.RPCMaxOutputSize {
 		//发送字节流太长
 		err = rpc_error.ErrTooLongOutputData
 		return
 	}
 
 	//发送数据
-	err = util.NetSendBytes(cli.conn, cli.buffer[:sendSize])
+	err = util.NetSendBytes(c.Conn, c.buffer[:sendSize])
 	if err != nil {
 		return
 	}
@@ -236,6 +253,13 @@ func (cli *Conn) RecvAndSend(recvHandler RecvHandler) (err error) {
 }
 
 //获取缓存区
-func (cli *Conn) GetData() []byte {
-	return cli.buffer
+func (c *Conn) GetData() []byte {
+	return c.buffer
+}
+
+//Recycle buffer
+func (c *Conn) Recycle() {
+	if len(c.buffer) > c.option.BufferRecycleSize {
+		c.buffer = make([]byte, c.option.BufferSize)
+	}
 }

@@ -3,7 +3,7 @@ name: IncHandler
 comment: 处理递增
 objects:
 
-- name: GetInc
+- name: IncKey
   comment: 获取递增
   cmd: 1
   version: 0
@@ -12,7 +12,7 @@ objects:
       typeDefine: string
       comment: 获取递增
 
-- name: RetInc
+- name: IncId
   comment: 返回递增的值
   cmd: 2
   version: 0
@@ -24,9 +24,9 @@ objects:
       typeDefine: string
       comment: 获取过程是否有err,如果有,则此字符串表示error内容
 
-- name: GetIncList
+- name: IncList
   comment: 获取递增列表
-  cmd: 1
+  cmd: 3
   version: 0
   fields:
     - name: KeyList
@@ -43,9 +43,9 @@ objects:
       typeDefine: uint32
       comment: 递增id
 
-- name: RetInc
+- name: IncIdList
   comment: 返回递增的值
-  cmd: 2
+  cmd: 4
   version: 0
   fields:
     - name: KeyIncList

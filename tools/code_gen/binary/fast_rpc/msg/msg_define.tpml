@@ -4,6 +4,7 @@
 package {{.Package}}
 
 import (
+    "github.com/pineal-niwan/busybox/binary"
     "github.com/pineal-niwan/busybox/fast_rpc"
 )
 

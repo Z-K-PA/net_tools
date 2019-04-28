@@ -1,2 +1,4 @@
 .idea/*
 tools/code_gen/serialization/main/code_gen_object
+.DS_Store
+tools/code_gen/binary/fast_rpc/output/*

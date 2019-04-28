@@ -1,7 +1,6 @@
 package util
 
 import (
-	"github.com/pineal-niwan/busybox/util/util_error"
 	"io"
 	"net"
 )
@@ -9,12 +8,12 @@ import (
 //验证connection
 func validate(conn net.Conn, buf []byte) (int, error) {
 	if conn == nil {
-		return 0, util_error.ErrEmptyConnection
+		return 0, ErrEmptyConnection
 	}
 
 	bL := len(buf)
 	if bL == 0 {
-		return 0, util_error.ErrEmptyByteSlice
+		return 0, ErrEmptyByteSlice
 	}
 	return bL, nil
 }

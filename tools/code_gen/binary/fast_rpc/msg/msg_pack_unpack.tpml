@@ -1,0 +1,106 @@
+// Code generation
+// !!! Do not edit it.
+// !!! Use code gen tool to generate.
+
+package {{.Package}}
+
+import (
+    "github.com/pineal-niwan/busybox/binary"
+)
+
+//{{.Comment}}
+type {{.Name}} struct {
+    *binary.BinaryHandler
+}
+
+//反序列化handler,读取字节流到对象中
+func NewRead{{.Name}}WithOption(data []byte, option *binary.Option) (*{{.Name}}, error) {
+    binHandler, err := binary.NewReadBinaryHandler(data, option)
+    if err != nil {
+        return nil, err
+    }else{
+        return &{{.Name}}{
+            BinaryHandler: binHandler,
+        }, nil
+    }
+}
+
+//序列化handler,将对象转化成字节流
+func NewWrite{{.Name}}WithOption(data []byte, option *binary.Option) (*{{.Name}}, error) {
+    binHandler, err := binary.NewWriteBinaryHandler(data, option)
+    if err != nil {
+        return nil, err
+    }else{
+        return &{{.Name}}{
+            BinaryHandler: binHandler,
+        }, nil
+    }
+}
+
+{{- range $obj := .Objects}}
+//读取{{$obj.Name}}
+func (p *{{$.Name}}) Read{{$obj.Name}}() (ret {{$obj.Name}}, err error) {
+    {{- range $field := $obj.Fields}}
+    ret.{{$field.Name}}, err = p.Read{{$field.TypeDefine | upperLetter}}()
+    if err != nil {
+        return
+    }
+    {{- end}}
+    return
+}
+
+//写入{{$obj.Name}}
+func (p *{{$.Name}}) Write{{$obj.Name}}(v {{$obj.Name}}) (err error) {
+    {{- range $field := $obj.Fields}}
+    err = p.Write{{$field.TypeDefine | upperLetter}}(v.{{$field.Name}})
+    if err != nil {
+        return
+    }
+    {{- end}}
+    return
+}
+
+//读取{{$obj.Name}}数组
+func (p *{{$.Name}}) Read{{$obj.Name}}Array() (ret []{{$obj.Name}}, err error) {
+    var size uint32
+
+    //读长度
+    size, err = p.ReadArrayLen()
+    if err != nil {
+        return
+    }
+    //读内容
+    ret = make([]{{$obj.Name}}, size)
+    for i := uint32(0); i < size; i++ {
+        ret[i], err = p.Read{{$obj.Name}}()
+        if err != nil {
+            return
+        }
+    }
+    return
+}
+
+//写入{{$obj.Name}}数组
+func (p *{{$.Name}}) Write{{$obj.Name}}Array(v []{{$obj.Name}}) (err error) {
+    //写长度
+    var size int
+    if v == nil{
+        size = 0
+    }else{
+        size = len(v)
+    }
+    err = p.WriteArrayLen(size)
+    if err != nil {
+        return
+    }
+
+    //写内容
+    for i := 0; i < size; i++ {
+        err = p.Write{{$obj.Name}}(v[i])
+        if err != nil {
+            return
+        }
+    }
+    return
+}
+{{- end}}

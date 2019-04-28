@@ -1,0 +1,76 @@
+// Code generation
+// !!! Do not edit it.
+// !!! Use code gen tool to generate.
+package {{.Package}}
+
+import (
+    "github.com/pineal-niwan/busybox/fast_rpc"
+)
+
+{{- range $obj := .Objects}}
+{{- if $obj.Cmd}}
+//{{$obj.Comment}}
+type Msg{{$obj.Name}} struct {
+    {{$obj.Name}}
+}
+
+//获取命令行
+func (msg *Msg{{$obj.Name}}) GetCmd() uint16 {
+    return uint16({{$obj.Cmd}})
+}
+
+//获取版本号
+func (msg *Msg{{$obj.Name}}) GetVersion() uint16 {
+    return uint16({{$obj.Version}})
+}
+
+//获取Code
+func (msg *Msg{{$obj.Name}}) GetCode() uint32 {
+    return uint32({{$obj.Cmd}}) | (uint32({{$obj.Version}}) << 16)
+}
+
+//序列化
+func (msg *Msg{{$obj.Name}}) Marshal(buf []byte, option *binary.Option) (int, []byte, error) {
+    writer, err := NewWrite{{$.Name}}WithOption(buf, option)
+    if err != nil {
+        return 0, nil, err
+    }
+    //先跳过消息头
+    err = writer.MovePos(uint32(fast_rpc.MsgHeadSize))
+    if err != nil {
+        return 0, nil, err
+    }
+    //写消息内容
+    err = writer.Write{{$obj.Name}}(msg.{{$obj.Name}})
+    if err != nil {
+        return 0, nil, err
+    }
+    size := writer.ResetPos(0)
+    //回填消息头
+    contentSize := uint32(size-fast_rpc.MsgHeadSize)
+    err = fast_rpc.MarshalMsgHead(writer.BinaryHandler,
+        fast_rpc.MsgHead{
+            Size: contentSize,
+            Cmd: uint16({{$obj.Cmd}}),
+            Version: uint16({{$obj.Version}}),
+        })
+    if err != nil {
+        return 0, nil, err
+    }
+    writer.ResetPos(size)
+    return size, writer.Data(), err
+}
+
+//反序列化
+func (msg *Msg{{$obj.Name}}) Unmarshal(buf []byte, option *binary.Option) error {
+    reader, err := NewRead{{$.Name}}WithOption(buf, option)
+    if err != nil {
+        return err
+    }
+    //读消息内容
+    msg.{{$obj.Name}}, err = reader.Read{{$obj.Name}}()
+    return err
+}
+{{- end}}
+
+{{- end}}

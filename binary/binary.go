@@ -2,7 +2,6 @@ package binary
 
 import (
 	"fmt"
-	"github.com/pineal-niwan/busybox/binary/binary_error"
 	"github.com/pineal-niwan/busybox/buffer"
 	"math"
 )
@@ -39,15 +38,15 @@ type BinaryHandler struct {
 //新建读取对象
 func NewReadBinaryHandler(data []byte, option *Option) (*BinaryHandler, error) {
 	if option == nil {
-		return nil, binary_error.ErrInitHandler
+		return nil, ErrInitHandler
 	}
 
 	if !option.Validate() {
-		return nil, binary_error.ErrInitHandler
+		return nil, ErrInitHandler
 	}
 
 	if len(data) == 0 {
-		return nil, binary_error.ErrEmptyBuffer
+		return nil, ErrEmptyBuffer
 	}
 
 	return &BinaryHandler{
@@ -59,11 +58,11 @@ func NewReadBinaryHandler(data []byte, option *Option) (*BinaryHandler, error) {
 //新建写入对象
 func NewWriteBinaryHandler(data []byte, option *Option) (*BinaryHandler, error) {
 	if option == nil {
-		return nil, binary_error.ErrInitHandler
+		return nil, ErrInitHandler
 	}
 
 	if !option.Validate() {
-		return nil, binary_error.ErrInitHandler
+		return nil, ErrInitHandler
 	}
 
 	return &BinaryHandler{
@@ -86,7 +85,7 @@ func (bh *BinaryHandler) Len() int {
 func (bh *BinaryHandler) checkPos(offset uint32) error {
 	dataLen := bh.pos + int(offset)
 	if dataLen > bh.option.DataMaxLen {
-		return binary_error.ErrOverflow
+		return ErrOverflow
 	}
 	if dataLen > len(bh.data) {
 		return fmt.Errorf("binary handler overflow, pos: %d offset: %d", bh.pos, offset)
@@ -98,7 +97,7 @@ func (bh *BinaryHandler) checkPos(offset uint32) error {
 func (bh *BinaryHandler) extendBufferIfNeed(offset uint32) error {
 	dataLen := bh.pos + int(offset)
 	if dataLen > bh.option.DataMaxLen {
-		return binary_error.ErrOverflow
+		return ErrOverflow
 	}
 	bh.data = buffer.BytesExtends(bh.data, dataLen, bh.option.ExtendExtraSize)
 	return nil
@@ -126,7 +125,7 @@ func (bh *BinaryHandler) WriteBytesStartAt(pos int, byteItem []byte) error {
 	offset := len(byteItem)
 	dataLen := pos + offset
 	if dataLen > bh.option.DataMaxLen {
-		return binary_error.ErrOverflow
+		return ErrOverflow
 	}
 	if dataLen > len(bh.data) {
 		return fmt.Errorf("binary handler overflow, pos: %d offset: %d", pos, offset)
@@ -466,7 +465,7 @@ func (bh *BinaryHandler) ReadString() (ret string, err error) {
 	}
 	//检查字符串是否越界
 	if int(size) > bh.option.StringMaxLen {
-		err = binary_error.ErrStringOverflow
+		err = ErrStringOverflow
 		return
 	}
 
@@ -487,7 +486,7 @@ func (bh *BinaryHandler) WriteString(s string) (err error) {
 	size := len(b)
 
 	if size > bh.option.StringMaxLen {
-		err = binary_error.ErrStringOverflow
+		err = ErrStringOverflow
 		return
 	}
 
@@ -512,7 +511,7 @@ func (bh *BinaryHandler) ReadArrayLen() (size uint32, err error) {
 		return
 	}
 	if int(size) > bh.option.ArrayMaxLen {
-		err = binary_error.ErrArrayOverflow
+		err = ErrArrayOverflow
 	}
 	return
 }
@@ -520,7 +519,7 @@ func (bh *BinaryHandler) ReadArrayLen() (size uint32, err error) {
 //写入一个数组长度，并判断其是否越界
 func (bh *BinaryHandler) WriteArrayLen(size int) (err error) {
 	if size > bh.option.ArrayMaxLen {
-		err = binary_error.ErrArrayOverflow
+		err = ErrArrayOverflow
 		return
 	}
 	return bh.WriteUint32(uint32(size))

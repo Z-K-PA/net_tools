@@ -206,7 +206,7 @@ func (s *Service) HandleConnection(conn net.Conn) {
 			return
 		}
 		//解析消息内容
-		inMsg, err = s.ParseMsg(head, buf)
+		inMsg, err = s.ParseMsg(head, buf[MsgHeadSize:MsgHeadSize+size])
 		if err != nil {
 			s.logger.Error("service parse content error",
 				zap.Error(err))
@@ -222,7 +222,7 @@ func (s *Service) HandleConnection(conn net.Conn) {
 		}
 
 		/***********************返回结果消息****************/
-		buf, size, err = outMsg.Marshal(buf)
+		size, buf, err = outMsg.Marshal(buf, s.option.Option)
 		if err != nil {
 			s.logger.Error("service marshal out msg error",
 				zap.Error(err))

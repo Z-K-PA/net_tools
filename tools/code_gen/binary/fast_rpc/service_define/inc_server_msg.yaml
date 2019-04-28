@@ -24,3 +24,33 @@ objects:
       typeDefine: string
       comment: 获取过程是否有err,如果有,则此字符串表示error内容
 
+- name: GetIncList
+  comment: 获取递增列表
+  cmd: 1
+  version: 0
+  fields:
+    - name: KeyList
+      typeDefine: stringArray
+      comment: 获取递增列表
+
+- name: KeyInc
+  comment: key - uint32对
+  fields:
+    - name: Key
+      typeDefine: string
+      comment: key
+    - name: Id
+      typeDefine: uint32
+      comment: 递增id
+
+- name: RetInc
+  comment: 返回递增的值
+  cmd: 2
+  version: 0
+  fields:
+    - name: KeyIncList
+      typeDefine: KeyIncArray
+      comment: 返回递增列表 (key-id)的列表
+    - name: Err
+      typeDefine: string
+      comment: 获取过程是否有err,如果有,则此字符串表示error内容

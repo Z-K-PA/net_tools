@@ -38,3 +38,30 @@ func (option *Option) Validate() bool {
 	}
 	return true
 }
+
+type CliOption struct {
+	//序列化选项
+	*binary.Option
+
+	//为每个连接初始分配的字节数
+	BufferSize int
+	//最大的消息体长度
+	MaxMsgSize int
+	//每个连接的buffer回收门槛
+	BufferRecycleSize int
+	//退火时间
+	RetreatTime time.Duration
+}
+
+func (cliOption *CliOption) Validate() bool {
+	if !cliOption.Option.Validate() {
+		return false
+	}
+
+	if cliOption.BufferSize == 0 ||
+		cliOption.MaxMsgSize == 0 ||
+		cliOption.BufferRecycleSize == 0 {
+		return false
+	}
+	return true
+}

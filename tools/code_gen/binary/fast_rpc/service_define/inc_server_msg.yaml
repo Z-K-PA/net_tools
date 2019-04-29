@@ -3,7 +3,7 @@ name: IncHandler
 comment: 处理递增
 objects:
 
-- name: IncKey
+- name: ReqKey
   comment: 获取递增
   cmd: 1
   version: 0
@@ -12,7 +12,7 @@ objects:
       typeDefine: string
       comment: 获取递增
 
-- name: IncId
+- name: RspId
   comment: 返回递增的值
   cmd: 2
   version: 0
@@ -24,7 +24,7 @@ objects:
       typeDefine: string
       comment: 获取过程是否有err,如果有,则此字符串表示error内容
 
-- name: IncList
+- name: ReqKeyList
   comment: 获取递增列表
   cmd: 3
   version: 0
@@ -33,7 +33,7 @@ objects:
       typeDefine: stringArray
       comment: 获取递增列表
 
-- name: KeyInc
+- name: KeyIdPair
   comment: key - uint32对
   fields:
     - name: Key
@@ -43,13 +43,13 @@ objects:
       typeDefine: uint32
       comment: 递增id
 
-- name: IncIdList
+- name: RspKeyIdPairList
   comment: 返回递增的值
   cmd: 4
   version: 0
   fields:
-    - name: KeyIncList
-      typeDefine: KeyIncArray
+    - name: KeyIdPairList
+      typeDefine: KeyIdPairArray
       comment: 返回递增列表 (key-id)的列表
     - name: Err
       typeDefine: string

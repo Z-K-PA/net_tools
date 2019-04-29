@@ -2,11 +2,11 @@ package: message
 functions:
 
 - name: GetIncNumberByKey
-  input: IncKey
-  output: IncId
+  input: ReqKey
+  output: RspId
   comment: 传入key，获取递增数字
 
 - name: GetIncNumberListByKeyList
-  input: IncList
-  output: IncIdList
+  input: ReqKeyList
+  output: RspKeyIdPairList
   comment: 传入一组key，获取一组对应的递增数字

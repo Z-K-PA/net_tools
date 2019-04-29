@@ -11,18 +11,18 @@ import (
 
 
 var (
-    initMsgParseHandlerHash map[uint32]fast_rpc.MsgParseHandler
+    InitMsgParseHandlerHash map[uint32]fast_rpc.MsgParseHandler
 )
 
 func init() {
     var key uint32
-    initMsgParseHandlerHash = make(map[uint32]fast_rpc.MsgParseHandler)
+    InitMsgParseHandlerHash = make(map[uint32]fast_rpc.MsgParseHandler)
 
     {{- range $obj := .Objects}}
     {{- if $obj.Cmd}}
     //生成{{$obj.Name}}解析函数 command:{{$obj.Cmd}} version:{{$obj.Version}}
     key = uint32({{$obj.Cmd}}) | (uint32({{$obj.Version}}) << 16)
-    initMsgParseHandlerHash[key] = func(data []byte, option *binary.Option) (fast_rpc.IMsg, error) {
+    InitMsgParseHandlerHash[key] = func(data []byte, option *binary.Option) (fast_rpc.IMsg, error) {
         msg := &Msg{{$obj.Name}}{}
         err := msg.Unmarshal(data, option)
         return msg, err

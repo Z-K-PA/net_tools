@@ -1,0 +1,22 @@
+package: message
+functions:
+
+- name: Get
+  input: ReqGet
+  output: RspGet
+  comment: 传入key，获取value
+
+- name: Set
+  input: ReqSet
+  output: RspSet
+  comment: 设置key-value
+
+- name: GetList
+  input: ReqGetList
+  output: RspGetList
+  comment: 获取一组key
+
+- name: SetList
+  input: ReqSetList
+  output: RspSetList
+  comment: 设置一组key-value

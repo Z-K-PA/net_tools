@@ -1,0 +1,111 @@
+package: message
+name: IncHandler
+comment: 处理key-value
+objects:
+
+# 键值对定义
+- name: KV
+  comment: 键值对定义
+  fields:
+    - name: Key
+      typeDefine: string
+      comment: 键
+    - name: Value
+      typeDefine: byteArray
+      comment: 值
+
+# 键错误对定义
+- name: KErr
+  comment: 键错误对定义
+  fields:
+    - name: Key
+      typeDefine: string
+      comment: 键
+    - name: Err
+      typeDefine: string
+      comment: 错误信息
+
+# 获取单键
+- name: ReqGet
+  comment: 获取单键
+  cmd: 1
+  version: 0
+  fields:
+    - name: Key
+      typeDefine: string
+      comment: 键
+
+# 返回单键
+- name: RspGet
+  comment: 返回单键
+  cmd: 2
+  version: 0
+  fields:
+    - name: Value
+      typeDefine: byteArray
+      comment: 字节流值
+    - name: Err
+      typeDefine: string
+      comment: 获取过程是否有err,如果有,则此字符串表示error内容
+
+# 获取多键
+- name: ReqGetList
+  comment: 获取多键
+  cmd: 3
+  version: 0
+  fields:
+    - name: KeyList
+      typeDefine: stringArray
+      comment: 一组键
+
+# 返回多键
+- name: RspGetList
+  comment: 返回一组键值对
+  cmd: 4
+  version: 0
+  fields:
+    - name: KVList
+      typeDefine: KVArray
+      comment: 返回一组键值对
+    - name: Err
+      typeDefine: string
+      comment: 获取过程是否有err,如果有,则此字符串表示error内容
+
+# 设置单键
+- name: ReqSet
+  comment: 设置键值对
+  cmd: 5
+  version: 0
+  fields:
+    - name: KVPair
+      typeDefine: KV
+      comment: 键值对
+
+# 返回设置单键结果
+- name: RspSet
+  comment: 返回设置单键结果
+  cmd: 6
+  version: 0
+  fields:
+    - name: Err
+      typeDefine: string
+      comment: 设置过程是否有err,如果有,则此字符串表示error内容
+
+# 设置多键
+- name: ReqSetList
+  comment: 设置多键
+  cmd: 7
+  version: 0
+  fields:
+    - name: KVList
+      typeDefine: KVArray
+      comment: 一组键值对
+
+- name: RspSetList
+  comment: 返回设置多键结果
+  cmd: 8
+  version: 0
+  fields:
+    - name: KErrList
+      typeDefine: KErrArray
+      comment: 设置过程是否有err,如果有,则此列表表示出错的键及其对应的原因

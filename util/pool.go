@@ -112,7 +112,7 @@ func (p *NetPool) getFactory() (*net.Dialer, string, chan net.Conn) {
 	return dialer, addr, connList
 }
 
-func (p *NetPool) Get(ctx context.Context) (net.Conn, error) {
+func (p *NetPool) Get(ctx context.Context) (*Conn, error) {
 	_, _, connList := p.getFactory()
 
 	if connList == nil {
@@ -129,5 +129,7 @@ func (p *NetPool) Get(ctx context.Context) (net.Conn, error) {
 				p:    p,
 			}, nil
 		}
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	}
 }

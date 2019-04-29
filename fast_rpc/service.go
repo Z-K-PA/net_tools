@@ -2,7 +2,6 @@ package fast_rpc
 
 import (
 	"fmt"
-	"github.com/go-errors/errors"
 	"github.com/pineal-niwan/busybox/binary"
 	"github.com/pineal-niwan/busybox/buffer"
 	"github.com/pineal-niwan/busybox/util"
@@ -11,11 +10,6 @@ import (
 	"net"
 	"sync"
 	"time"
-)
-
-var (
-	ErrBadMsgParser  = errors.New("bad msg parser")
-	ErrBadMsgHandler = errors.New("bad msg parser")
 )
 
 //消息解析函数
@@ -36,6 +30,8 @@ type Service struct {
 	msgParseHash map[uint32]MsgParseHandler
 	//消息处理
 	msgHandlerHash map[uint32]MsgHandler
+	//缓冲池
+	bufferPool *sync.Pool
 
 	closed bool
 	sync.Mutex
@@ -47,12 +43,19 @@ func (s *Service) Init(
 	logger *zap.Logger,
 	option *Option,
 	msgParseHash map[uint32]MsgParseHandler) {
+
+	bufferPool := &sync.Pool{
+		New: func() interface{} {
+			return make([]byte, option.BufferSize)
+		},
+	}
 	s.Lock()
 	s.ln = ln
 	s.logger = logger
 	s.option = option
 	s.msgParseHash = msgParseHash
 	s.msgHandlerHash = make(map[uint32]MsgHandler)
+	s.bufferPool = bufferPool
 	s.Unlock()
 }
 
@@ -144,7 +147,7 @@ func (s *Service) HandleConnection(conn net.Conn) {
 	var head MsgHead
 	var size int
 
-	buf := make([]byte, s.option.BufferSize)
+	buf := s.bufferPool.Get().([]byte)
 
 	defer func() {
 		//panic后防止整个server被panic
@@ -163,6 +166,11 @@ func (s *Service) HandleConnection(conn net.Conn) {
 		if closeErr != nil {
 			s.logger.Error("service close connection", zap.Error(closeErr))
 		}
+		//归还缓存
+		if len(buf) <= s.option.BufferRecycleSize {
+			s.bufferPool.Put(buf)
+		}
+
 	}()
 
 	for {
@@ -190,7 +198,7 @@ func (s *Service) HandleConnection(conn net.Conn) {
 		}
 
 		/***********************接收消息体***************/
-		//接收消息体字节流
+		//检查消息体大小
 		size = int(head.Size)
 		if size == 0 || size > s.option.MaxMsgSize {
 			s.logger.Error("service size of inMsg error",
@@ -199,6 +207,7 @@ func (s *Service) HandleConnection(conn net.Conn) {
 		}
 		//如果buf不够，扩大
 		buf = buffer.BytesExtends(buf, MsgHeadSize+size, 0)
+		//接收消息体字节流
 		err = util.NetReadBytes(conn, buf[MsgHeadSize:MsgHeadSize+size])
 		if err != nil {
 			s.logger.Error("service receive content error",
@@ -234,6 +243,11 @@ func (s *Service) HandleConnection(conn net.Conn) {
 			s.logger.Error("service send out msg error",
 				zap.Error(err))
 			return
+		}
+
+		//缓冲区过大，resize
+		if len(buf) > s.option.BufferRecycleSize {
+			buf = make([]byte, s.option.BufferSize)
 		}
 	}
 

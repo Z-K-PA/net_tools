@@ -49,7 +49,7 @@ func main() {
 }
 
 func generateServerCode(c *cli.Context, logger *zap.Logger) error {
-	var packageDef binary.App
-	err := binary.GenCode(c, logger, &packageDef)
+	var appDef binary.App
+	err := binary.GenCode(c, logger, &appDef)
 	return err
 }

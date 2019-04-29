@@ -5,6 +5,7 @@ import (
 	"text/template"
 )
 
+//消息属性定义
 type Field struct {
 	//属性名
 	Name string `yaml:"name" json:"name"`
@@ -14,6 +15,7 @@ type Field struct {
 	Comment string `yaml:"comment" json:"comment"`
 }
 
+//消息定义
 type Object struct {
 	//消息编号
 	Cmd uint16 `yaml:"cmd" json:"cmd"`
@@ -27,6 +29,7 @@ type Object struct {
 	Fields []Field `yaml:"fields" json:"fields"`
 }
 
+//包定义
 type Package struct {
 	//包名
 	Package string `yaml:"package" json:"package"`
@@ -36,6 +39,24 @@ type Package struct {
 	Comment string `yaml:"comment" json:"comment"`
 	//定义的结构体列表
 	Objects []Object `yaml:"objects" json:"objects"`
+}
+
+//API函数定义
+type APIFunction struct {
+	//函数名
+	Name string `yaml:"name" json:"name"`
+	//输入参数
+	Input string `yaml:"input" json:"input"`
+	//输出参数
+	Output string `yaml:"output" json:"output"`
+	//注释
+	Comment string `yaml:"comment" json:"comment"`
+}
+
+//API定义
+type API struct {
+	Package   string        `yaml:"package" json:"package"`
+	Functions []APIFunction `yaml:"functions" json:"functions"`
 }
 
 //命令行参数
@@ -50,6 +71,7 @@ type Flag struct {
 	Value string `yaml:"value" json:"value"`
 }
 
+//服务名及参数
 type App struct {
 	//名称
 	Name string `yaml:"name" json:"name"`

@@ -49,7 +49,7 @@ func main() {
 }
 
 func generateMsgCode(c *cli.Context, logger *zap.Logger) error {
-	var packageDef binary.Package
-	err := binary.GenCode(c, logger, &packageDef)
+	var msgDef binary.Package
+	err := binary.GenCode(c, logger, &msgDef)
 	return err
 }

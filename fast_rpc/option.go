@@ -23,9 +23,9 @@ type Option struct {
 	BufferRecycleSize int
 }
 
-func (option *Option) Validate() bool {
+func (option *Option) Validate() error {
 	if !option.Option.Validate() {
-		return false
+		return ErrInvalidOption
 	}
 
 	if option.AcceptDelay == 0 ||
@@ -34,9 +34,9 @@ func (option *Option) Validate() bool {
 		option.BufferSize == 0 ||
 		option.MaxMsgSize == 0 ||
 		option.BufferRecycleSize == 0 {
-		return false
+		return ErrInvalidOption
 	}
-	return true
+	return nil
 }
 
 type CliOption struct {
@@ -53,15 +53,15 @@ type CliOption struct {
 	RetreatTime time.Duration
 }
 
-func (cliOption *CliOption) Validate() bool {
+func (cliOption *CliOption) Validate() error {
 	if !cliOption.Option.Validate() {
-		return false
+		return ErrInvalidOption
 	}
 
 	if cliOption.BufferSize == 0 ||
 		cliOption.MaxMsgSize == 0 ||
 		cliOption.BufferRecycleSize == 0 {
-		return false
+		return ErrInvalidOption
 	}
-	return true
+	return nil
 }

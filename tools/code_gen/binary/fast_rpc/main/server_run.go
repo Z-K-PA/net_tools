@@ -32,7 +32,12 @@ func serverRun(c *cli.Context, logger *zap.Logger) error {
 	//rpc notify chan
 	rpcNotify := make(chan struct{})
 	//启动rpc服务
-	service := initServiceHandler(ln, logger)
+	service, err := initServiceHandler(ln, logger)
+	if err != nil {
+		//关闭连接
+		ln.Close()
+		return err
+	}
 	go service.LoopHandle(rpcNotify)
 
 	//pprof notify chan

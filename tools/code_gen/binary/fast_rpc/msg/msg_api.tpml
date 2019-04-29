@@ -1,0 +1,37 @@
+// Code generation
+// !!! Do not edit it.
+// !!! Use code gen tool to generate.
+package {{.Package}}
+
+import (
+	"context"
+	"github.com/pineal-niwan/busybox/fast_rpc"
+)
+
+{{- range $function := .Functions}}
+//{{$function.Comment}}
+func {{$function.Name}}(
+    ctx context.Context,
+    cli *fast_rpc.Cli,
+    input {{$function.Input}},
+    retryTimes int) (*{{$function.Output}}, error) {
+
+    //调用RPC - 发送消息后接收消息
+	outMsg, err := cli.CallWithRetry(
+	    ctx,
+	    &Msg{{$function.Input}}{
+	            {{$function.Input}}: input,
+	    },
+	    retryTimes)
+	if err != nil {
+		return nil, err
+	}
+	//检查是否是期望的消息
+	output, ok := outMsg.(*Msg{{$function.Output}})
+	if !ok {
+		return nil, fast_rpc.ErrNotExpectMsg
+	}
+	return &output.{{$function.Output}}, nil
+}
+
+{{- end}}

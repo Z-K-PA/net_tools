@@ -24,9 +24,36 @@ objects:
       typeDefine: string
       comment: 获取过程是否有err,如果有,则此字符串表示error内容
 
+- name: ReqKeyWithIncNum
+  comment: 获取递增-带增加的数字
+  cmd: 3
+  version: 0
+  fields:
+    - name: Key
+      typeDefine: string
+      comment: 获取递增
+    - name: IncNum
+      typeDefine: uint32
+      comment: 递增的步长
+
+- name: RspIdWithIncNum
+  comment: 返回递增的值
+  cmd: 4
+  version: 0
+  fields:
+    - name: Id
+      typeDefine: uint32
+      comment: 返回递增
+    - name: IncNum
+      typeDefine: uint32
+      comment: 递增的步长
+    - name: Err
+      typeDefine: string
+      comment: 获取过程是否有err,如果有,则此字符串表示error内容
+
 - name: ReqKeyList
   comment: 获取递增列表
-  cmd: 3
+  cmd: 5
   version: 0
   fields:
     - name: KeyList
@@ -45,7 +72,7 @@ objects:
 
 - name: RspKeyIdPairList
   comment: 返回递增的值
-  cmd: 4
+  cmd: 6
   version: 0
   fields:
     - name: KeyIdPairList

@@ -6,6 +6,11 @@ functions:
   output: RspId
   comment: 传入key，获取递增数字
 
+- name: GetIncNumberByKeyWithIncStep
+  input: ReqKeyWithIncNum
+  output: ReqKeyWithIncNum
+  comment: 传入key和递增的步长，获取递增数字
+
 - name: GetIncNumberListByKeyList
   input: ReqKeyList
   output: RspKeyIdPairList

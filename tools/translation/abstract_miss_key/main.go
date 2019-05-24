@@ -8,12 +8,11 @@ import (
 	"io"
 	"log"
 	"os"
-	"strings"
 )
 
 func main() {
 	cmd := &cli.App{
-		Name:    "提取需要翻译的文档中的不同",
+		Name:    "提取需要翻译的文档中的不同key",
 		Version: "1.0",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -23,10 +22,6 @@ func main() {
 			&cli.StringFlag{
 				Name:  "input2",
 				Usage: "输入的文本文件2",
-			},
-			&cli.StringSliceFlag{
-				Name:  "skipWords",
-				Usage: "跳过比较的文字",
 			},
 			&cli.StringFlag{
 				Name:  "output",
@@ -70,13 +65,9 @@ func getKVFormFile(input string) ([]parse.TranslatePair, error) {
 func abstractDiff(c *cli.Context) error {
 	var addedKeyList []parse.TranslatePairDiff
 	var deletedKeyList []parse.TranslatePairDiff
-	var differentKeyList []parse.TranslatePairDiff
 
 	input1 := c.String("input1")
 	input2 := c.String("input2")
-
-	skipWordList := c.StringSlice("skipWords")
-	log.Printf("skip word list:%+v\n", skipWordList)
 
 	inputPairList1, err := getKVFormFile(input1)
 	if err != nil {
@@ -103,32 +94,12 @@ func abstractDiff(c *cli.Context) error {
 	}
 
 	for _, k2 := range inputPairList2 {
-		k1, ok := m1[k2.Key]
+		_, ok := m1[k2.Key]
 		if !ok {
 			//input2有input1没有
 			addedKeyList = append(addedKeyList, parse.TranslatePairDiff{
 				TranslatePair: k2,
 			})
-		} else {
-			k1Val := k1.Val
-			k2Val := k2.Val
-
-			if k1Val != k2Val {
-				k1Val = strings.Replace(k1Val, " ", "", -1)
-				k2Val = strings.Replace(k2Val, " ", "", -1)
-
-				for _, skipWord := range skipWordList {
-					k1Val = strings.Replace(k1Val, skipWord, "", -1)
-					k2Val = strings.Replace(k2Val, skipWord, "", -1)
-				}
-
-				if k1Val != k2Val {
-					differentKeyList = append(differentKeyList, parse.TranslatePairDiff{
-						TranslatePair: k2,
-						OldVal:        k1.Val,
-					})
-				}
-			}
 		}
 	}
 
@@ -156,24 +127,6 @@ func abstractDiff(c *cli.Context) error {
 		cell.SetString(addKey.Key)
 		cell = row.AddCell()
 		cell.SetString(addKey.Val)
-	}
-	row = sheet.AddRow()
-	row = sheet.AddRow()
-	row = sheet.AddRow()
-	row = sheet.AddRow()
-	row = sheet.AddRow()
-
-	row = sheet.AddRow()
-	cell = row.AddCell()
-	cell.SetString("更改的条目")
-	for _, diffKey := range differentKeyList {
-		row = sheet.AddRow()
-		cell = row.AddCell()
-		cell.SetString(diffKey.Key)
-		cell = row.AddCell()
-		cell.SetString(diffKey.Val)
-		cell = row.AddCell()
-		cell.SetString(diffKey.OldVal)
 	}
 	row = sheet.AddRow()
 	row = sheet.AddRow()

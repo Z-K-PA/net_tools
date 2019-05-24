@@ -9,7 +9,7 @@ var (
 	keyReg      *regexp.Regexp
 	valueReg    *regexp.Regexp
 	quoteReg    *regexp.Regexp
-	variableReg *regexp.Regexp
+	resourceReg *regexp.Regexp
 )
 
 type TranslatePair struct {
@@ -73,12 +73,12 @@ func QuoteReg() *regexp.Regexp {
 	}
 }
 
-//变量引用的正则表达式
-func VariableReg() *regexp.Regexp {
-	if variableReg != nil {
-		return variableReg
+//资源对应的正则表达式
+func ResourceReg() *regexp.Regexp {
+	if resourceReg != nil {
+		return resourceReg
 	} else {
-		variableReg = regexp.MustCompile(`"%.*"`)
-		return variableReg
+		resourceReg = regexp.MustCompile(`LangPackString.langPackString\({1}[^\(]+\){1}`)
+		return resourceReg
 	}
 }
